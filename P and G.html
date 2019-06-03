@@ -37,8 +37,7 @@ function generate(){
     document.getElementById('pvalue').innerHTML='';
     document.getElementById('qvalue').innerHTML='';
     var num = 0;var final = 0;
-    var value = 0;var prime = 0;var result= 0 ;var ans=0;
-    localStorage.setItem('value',0);
+   var prime = 0;var result= 0 ;var ans=0;
 
     function toBinary(n){
         var array=[]; var array2=[];
@@ -136,11 +135,10 @@ function generate(){
         }
     }
     generateOrderId();
-    var answer = toBinary(Number(document.getElementById('input').value));
+    var answer = toBinary(13);
     var prime = count(answer);
     var ans = isPrime(prime);
-    localStorage.setItem('value',ans);
-    var result = findPrimitive(localStorage.getItem('value'));
+    var result = findPrimitive(ans);
     document.getElementById('pvalue').innerHTML=ans;
     document.getElementById('qvalue').innerHTML=result;
 }

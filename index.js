@@ -45,7 +45,7 @@ const TransportersSchema = new mongoose.Schema({
 });
 
 const OrderSchema = new mongoose.Schema({
-	order_id : {type : Number , required : true}
+	order_id : {type : Number , required : true},
 	seller_detail : {type : String , required : true},
 	buyer_detail : {type : String , required : true},
 	product_details : {type : Object , required : true},
@@ -199,7 +199,7 @@ app.post('/check/:id',urlencodedParser,function(req,res){
 	const {seller_detail , buyer_detail , product_details , name , from_place , to_place , 
  			   obtain_from , give_to} = req.body;
     const order_id = (new Date()).getTime();
-    function forP(order_id);
+    forP(order_id);
 	const order = Order({order_id , seller_detail , buyer_detail , product_details , transporter_details :{name , from_place , to_place , 
 							 obtain_from , give_to}}).save(err => console.log(err));
 	var i=0,m=0;var errors = [],dat=[],array=[];
@@ -264,11 +264,10 @@ app.post('/check/:id',urlencodedParser,function(req,res){
 
 }); });
 
-function forP(let val){
+var val = 0;
+function forP(val){
 	var num = 0;var final = 0;
-    var value = 0;var prime = 0;var result= 0 ;var ans=0;
-    localStorage.setItem('value',0);
-
+    var prime = 0;var result= 0 ;var ans=0;
     function toBinary(n){
         var array=[]; var array2=[];
         var i = 0; 
@@ -368,8 +367,9 @@ function forP(let val){
     var answer = toBinary(Number(val));
     var prime = count(answer);
     var ans = isPrime(prime);//gives P
-    localStorage.setItem('value',ans);
-    var result = findPrimitive(localStorage.getItem('value'));//gives G
+    var result = findPrimitive(ans);//gives G
+    console.log(ans);
+    console.log(result);
 
 }
 
