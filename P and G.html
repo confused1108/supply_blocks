@@ -28,10 +28,8 @@
 <script>
 
 function generateOrderId() {
-    var array =[];
-    var r = Math.floor(10000000000 + (Math.random()*900000000000));
-    if(array.indexOf(r) === -1) array.push(r);
-    document.getElementById('input').value = (array);
+    var s= (new Date()).getTime();
+    document.getElementById('input').value = s;
 }
 
 function generate(){
