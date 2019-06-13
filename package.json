@@ -5,8 +5,9 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "dev": "nodemon index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "server": "nodemon index.js",
+    "btp_view": "npm start --prefix btp_view",
+    "dev": "concurrently \"npm run server\" \"npm run btp_view\" "
   },
   "author": "",
   "license": "ISC",
@@ -17,7 +18,8 @@
     "mongoose": "^5.5.10",
     "mongoose-timestamp": "^0.6.0",
     "nodemailer": "^6.2.1",
-    "react-router-dom": "^5.0.0"
+    "react-router-dom": "^5.0.0",
+    "sha3": "^2.0.4"
   },
   "devDependencies": {
     "nodemon": "^1.19.0"

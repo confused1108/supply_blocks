@@ -13,6 +13,8 @@ import Final from './final';
 import Dashbrd from './cdashboard';
 import Add from './add';
 import Check from './check';
+import QR_Reader from './qr_reader';
+import Transporter from './transporter';
 
 class App extends Component {
   render() {
@@ -34,6 +36,8 @@ class App extends Component {
       <Route path='/dashbrd' component={Dashbrd} />
       <Route path='/package/:id' component={Add} />
       <Route path='/check/:id' component={Check} />
+      <Route path='/transporter/:id' component={Transporter} />
+      <Route path='/qr' component={QR_Reader} />
       </Switch>
       </div>
       </BrowserRouter>

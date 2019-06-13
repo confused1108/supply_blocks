@@ -23,15 +23,14 @@
   </div>
 </nav>
 <br><br><br>
-<% if(data.length>0) {
-for(var i = 0 ; i < data.length ; i++) { %>
-<h1><%= data[i].name %></h1>
-<% for(var k=0;k<data[i].msgs.length;k++){ %>
+<h1><%= data.name %></h1>
+<% if(data.msgs.length > 0) { %>
+<% for(var k=0;k<data.msgs.length;k++){ %>
 <div class='container'>
-  <p>Msgs : You have to take from <%= data[i].msgs[k].obtain_from %> and give to <%= data[i].msgs[k].give_to %> </p>
+  <p>Msgs : <%= data.msgs[k] %></p>
 </div>
-<% }} } else { %>
-<p>No such transporter exists</p>
+<% }} else { %>
+<p>No Msgs</p>
 <% } %>
 </body>
 </html>

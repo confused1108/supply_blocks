@@ -3,9 +3,16 @@ const bodyParser = require('body-parser');
 const urlencodedParser = bodyParser.urlencoded({extended: false});
 const mongoose = require('mongoose');
 const timestamp = require('mongoose-timestamp');
-var nodemailer = require('nodemailer');
+const nodemailer = require('nodemailer');
+const {SHA3} = require('sha3');
+
+const hash = new SHA3(512);
 
 const app = express();
+
+app.set('view engine' , 'ejs');
+
+app.use(express.static('./public'));
 
 mongoose.connect('mongodb://localhost/order_chain');
 
@@ -36,41 +43,70 @@ const IndSchema = new mongoose.Schema({
 	password : {type : String , required : true}
 });
 
-const TransportersSchema = new mongoose.Schema({
-	name : {type : String , required : true},
-	from_place : {type : String , required : true},
-	to_place : {type : String , required : true},
-	obtain_from : {type : String , required : true},
-	give_to : {type : String , required : true}
+const transporterSchema = new mongoose.Schema({
+	transporter_name : {type : String , required : true},
+	transporter_id : {type : Number , required : true},
+	city_id : {type : Number , required : true},
+	number : {type : Number , required : true},
+	msgs : {type : Array , required : true}
+});
+
+const CitiesSchema = new mongoose.Schema({
+	city_name : {type : String , required : true},
+	city_id : {type : String , required : true}
 });
 
 const OrderSchema = new mongoose.Schema({
 	order_id : {type : Number , required : true},
 	seller_detail : {type : String , required : true},
 	buyer_detail : {type : String , required : true},
-	product_details : {type : Object , required : true},
-    transporter_details : TransportersSchema
+	//product_details : {type : Object , required : true},
+	pvalue : {type : Number , required : true},
+	gvalue : {type : Number , required : true},
+	hashvalue: {type : Number , required : true},
+    transporter_details : Array 
 });
 
 const NodeSchema = new mongoose.Schema({
 	name : {type : String , required : true},
 	number : {type : Number , required : true},
-	email : {type : String , required : true}
+	obtain_from : {type : String , required : true},
+	give_to : {type : String , required : true}
 });
 
+const connections_finalSchema = new mongoose.Schema({
+	Conn_id:Number,
+	Source:Number,
+	Destination:Number,
+	Distance:Number,
+	time_const:Number,
+	cost_constant:Number
+});
+
+const GraphNodesSchema = new mongoose.Schema({
+	nodes : Array 
+});
 
 CompanySchema.plugin(timestamp);
 IndSchema.plugin(timestamp);
 PackageSchema.plugin(timestamp);
-TransportersSchema.plugin(timestamp);
+transporterSchema.plugin(timestamp);
 OrderSchema.plugin(timestamp);
 NodeSchema.plugin(timestamp);
 
 const Node = mongoose.model('Node', NodeSchema , 'Node');
+const GraphNodes = mongoose.model('GraphNodes', GraphNodesSchema , 'GraphNodes');
 const Order = mongoose.model('Order', OrderSchema , 'Order');
 const Company = mongoose.model('Company', CompanySchema , 'Company');
 const Ind = mongoose.model('Ind', IndSchema , 'Ind');
 const Package = mongoose.model('Package', PackageSchema , 'Package');
+const transporter = mongoose.model('transporter', transporterSchema , 'transporter');
+const connections_final = mongoose.model('connections_final', connections_finalSchema , 'connections_final');
+const Cities= mongoose.model('Cities', CitiesSchema , 'Cities');
+
+var Graph = require('node-dijkstra');
+var route = new Graph();
+var i=1;
 
 //Company registration
 app.post('/user/:cname/:website/:email/:number/:password',function(req,res){
@@ -137,37 +173,13 @@ app.get('/order_details/:id', urlencodedParser , (req , res) => {
  		});
 });
 
-//search for tranporters in order and form transporter database
-app.get('/transporter' , (req,res) => {
-        Order.find({},function(err,data){
-			if(err) throw err;
-			// if no order is places till now
-			if(data.length ==0){
-				console.log('No order exists');
-			}
-			//if orders are there then enter their transporter details in database
-			if(data.length>0){
-				for(let k=0;k<data.length;k++){
-					const val = data[k].transporter_details;
-					const tid = val.tid;
-					const name = val.name;
-					const msgs = [{obtain_from:val.obtain_from,give_to:val.give_to}];
-					const node1 = Node({name:name,tid:tid,msgs:msgs}).save(function(err){
-						if(err) throw err;
-					});
-				}
-			}
-		});
-});
-
-
 // get transportr profile with id
 app.get('/transporter/:id' , function(req,res){
   
-    const query = {tid:req.params.id};
-    Node.find(query, function(err,node){
+    const query = {transporter_id:Number(req.params.id)};
+    transporter.find(query, function(err,node){
   	if(err) throw err;
-  	res.render('transporterPage',{data:node});
+  	res.send(node[0]);
   });
 });
 
@@ -192,16 +204,118 @@ app.get('/package/:id',function(req,res){
 	});
 });
 
+var arr =[];
+//generate Graph
+app.get('/',function(req,res){
+
+	connections_final.find({},function(err,data){
+		if(err) throw err;
+		
+		if(data.length>0)
+		{
+			while(i<57){
+				var string = '';
+				string = 'route.addNode("' + i  + '", {';
+				for(let j=0;j<data.length;j++){
+					if(data[j].Source == i){
+						 string += data[j].Destination + ':' + data[j].Distance + ',';
+					}}
+					string = string.substring(0, string.length - 1);
+				    string += '})';
+				    eval(string);
+				    arr.push(string);
+				    i++;
+			}
+		}
+		var node = GraphNodes({nodes : arr}).save(function(err){
+			if(err) throw err;
+		});
+		console.log('Graph saved');
+			
+ });
+});
+
+var node1 = 0 , node2 = 0;
+
+var finalarray =[];
+app.get('/placeorder' , urlencodedParser , function(req,res){
+	
+	const {seller_detail , buyer_detail , /*product_details*/} = req.body;
+	var store = (new Date()).getTime();
+    var values = forP(store);
+    const order_id = values[0];
+    const pvalue = values[1];
+    const gvalue = values[2];
+    const hashvalue = values[3];
+    console.log(hashvalue);
+    var f = '"' + hashvalue + '"';
+    console.log(f);
+    hash.update(f);
+    var  z = hash.digest('hex');
+    console.log(z);
+	const query1 = {city_name : seller_detail};
+	const query2 = {city_name : buyer_detail};
+	Cities.find(query1,function(err,data){
+		if(err) throw err;
+		if(data.length > 0){
+				node1 = data[0].city_id;
+				Cities.find(query2,function(err,data){
+					if(err) throw err;
+					if(data.length > 0){
+						node2 = data[0].city_id;
+						GraphNodes.find({},function(err,data){
+							if(err) throw err;
+							if(data.length>0){
+								array1 = data[0];
+								eval(array1);
+								finalarray = route.path(node1,node2);
+								var order = Order({order_id  , seller_detail , buyer_detail , pvalue , gvalue,
+													hashvalue , transporter_details : finalarray}).save(function(err){
+												 	if(err) throw err;
+												});
+								console.log('Order saved');
+		                        sendNotification(finalarray);
+	
+						} });
+				    } });
+		} });});
+
+var trans_arr =[];
+
+function sendNotification(trans_arr){
+
+    console.log(trans_arr);
+	for(var i =1 ; i < trans_arr.length-1 ; i++){
+		var x = Number(trans_arr[i]);
+		var y = Number(trans_arr[i-1]);
+		var z = Number(trans_arr[i+1]);
+		const query = {transporter_id : x};
+		const query1 = {transporter_id : y };
+		const query2 = {transporter_id : z };
+		console.log(query);console.log(query1);console.log(query2);
+                transporter.find(query1,function(err,data){
+                	if(err) throw err;
+                	if(data.length>0){
+                		var obtain_from = data[0].transporter_name;
+                		console.log(obtain_from);
+                		transporter.find(query2,function(err,data){
+                			if(err) throw err;
+                			if(data.length>0){
+                				var give_to = data[0].transporter_name;
+                				console.log(give_to);
+                				var msg = 'Obtain from ' + obtain_from + ' and Give to ' + give_to ;
+ 							    transporter.update(query, {$push:{msgs:msg}} ,function(err){
+									if(err) throw err;	
+
+                			}); }
+
+                }); } });	console.log('updated');	 }
+}
+
 // checking the 4 conditions
 app.post('/check/:id',urlencodedParser,function(req,res){
 
 	const pid = req.body.pid;
-	const {seller_detail , buyer_detail , product_details , name , from_place , to_place , 
- 			   obtain_from , give_to} = req.body;
-    const order_id = (new Date()).getTime();
-    forP(order_id);
-	const order = Order({order_id , seller_detail , buyer_detail , product_details , transporter_details :{name , from_place , to_place , 
-							 obtain_from , give_to}}).save(err => console.log(err));
 	var i=0,m=0;var errors = [],dat=[],array=[];
 	const query = {_id : req.params.id};
 	Company.find(query,function(err,user){
@@ -264,7 +378,7 @@ app.post('/check/:id',urlencodedParser,function(req,res){
 
 }); });
 
-var val = 0;
+var val = 0;var array=[];
 function forP(val){
 	var num = 0;var final = 0;
     var prime = 0;var result= 0 ;var ans=0;
@@ -363,13 +477,24 @@ function forP(val){
 
         }
     }
+    var i=0,j=0,k=0;
+	function calculateHash(i,j,k){
+        var c1 = Math.pow(i,k);
+        var c2 = c1 % j;
+        return c2;
+    }
  
     var answer = toBinary(Number(val));
     var prime = count(answer);
     var ans = isPrime(prime);//gives P
     var result = findPrimitive(ans);//gives G
-    console.log(ans);
-    console.log(result);
+    var a = Math.floor(Math.random()*20 + 5);
+    var hash = calculateHash(result,ans,a); //gives hash
+    array.push(val);
+    array.push(ans);
+    array.push(result);
+    array.push(hash);
+    return array;
 
 }
 

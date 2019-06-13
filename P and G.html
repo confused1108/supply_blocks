@@ -22,15 +22,12 @@
     </div>
     <br>
     <p class='text-center'>Value of P is : <span id='pvalue'></span></p>
-    <p class='text-center'>Value of Q is : <span id='qvalue'></span></p>
+    <p class='text-center'>Value of G is : <span id='qvalue'></span></p>
+    <p class='text-center'>Value of Hash is : <span id='hashvalue'></span></p>
 
 </body>
 <script>
 
-function generateOrderId() {
-    var s= (new Date()).getTime();
-    document.getElementById('input').value = s;
-}
 
 function generate(){
    
@@ -134,13 +131,23 @@ function generate(){
 
         }
     }
-    generateOrderId();
-    var answer = toBinary(13);
+    var i=0,j=0,k=0;
+
+    function calculateHash(i,j,k){
+        var c1 = Math.pow(i,k);
+        var c2 = c1 % j;
+        return c2;
+    }
+    var id = document.getElementById('input').value;
+    var answer = toBinary(id);
     var prime = count(answer);
     var ans = isPrime(prime);
     var result = findPrimitive(ans);
     document.getElementById('pvalue').innerHTML=ans;
     document.getElementById('qvalue').innerHTML=result;
+    var a = Math.floor(Math.random()*20 + 5);
+    var hash = calculateHash(result,ans,a);
+    document.getElementById('hashvalue').innerHTML=hash;
 }
 
 </script>
