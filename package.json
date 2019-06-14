@@ -5,9 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "server": "nodemon index.js",
-    "btp_view": "npm start --prefix btp_view",
-    "dev": "concurrently \"npm run server\" \"npm run btp_view\" "
+   
   },
   "author": "",
   "license": "ISC",
