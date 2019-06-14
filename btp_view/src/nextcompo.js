@@ -2,11 +2,11 @@ import React, { Component } from 'react';
 import Web3 from 'web3';
 import storehash from './storehash';
 //const provider = new HDWalletProvider(mnemonic, "rinkeby.infura.io/v3/9568c28229d64596ad520f51603765f2", 4);
-const infura = "https:rinkeby.infura.io/v3/9568c28229d64596ad520f51603765f2";
-const web3 = new Web3(new Web3.providers.HttpProvider(infura));
-//const provider = window.web3.currentProvider ; 
-//provider.enable(); 
-//const web3 = new Web3(provider);
+//const infura = "https:rinkeby.infura.io/v3/9568c28229d64596ad520f51603765f2";
+//const web3 = new Web3(new Web3.providers.HttpProvider(infura));
+const provider = window.web3.currentProvider ; 
+provider.enable(); 
+const web3 = new Web3(provider);
 
 class NextCompo extends Component {
 
