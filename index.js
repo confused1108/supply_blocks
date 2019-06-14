@@ -64,6 +64,7 @@ const OrderSchema = new mongoose.Schema({
 	pvalue : {type : Number , required : true},
 	gvalue : {type : Number , required : true},
 	hashvalue: {type : Number , required : true},
+	convertedHash : String,
     transporter_details : Array 
 });
 
@@ -237,6 +238,17 @@ app.get('/',function(req,res){
 
 var node1 = 0 , node2 = 0;
 
+app.get('/gethash/:id' , function(req,res){
+	console.log('stage1');
+	const query = {order_id : req.params.id};
+	Order.find(query , function(err,data){
+		if(err) throw err;
+		if(data.length > 0){
+			res.send(data[0]);
+		}
+	})
+});
+
 var finalarray =[];
 app.get('/placeorder' , urlencodedParser , function(req,res){
 	
@@ -247,12 +259,10 @@ app.get('/placeorder' , urlencodedParser , function(req,res){
     const pvalue = values[1];
     const gvalue = values[2];
     const hashvalue = values[3];
-    console.log(hashvalue);
     var f = '"' + hashvalue + '"';
-    console.log(f);
     hash.update(f);
-    var  z = hash.digest('hex');
-    console.log(z);
+    var  convertedHash = hash.digest('hex');
+    console.log(convertedHash);
 	const query1 = {city_name : seller_detail};
 	const query2 = {city_name : buyer_detail};
 	Cities.find(query1,function(err,data){
@@ -269,7 +279,7 @@ app.get('/placeorder' , urlencodedParser , function(req,res){
 								array1 = data[0];
 								eval(array1);
 								finalarray = route.path(node1,node2);
-								var order = Order({order_id  , seller_detail , buyer_detail , pvalue , gvalue,
+								var order = Order({convertedHash , order_id  , seller_detail , buyer_detail , pvalue , gvalue,
 													hashvalue , transporter_details : finalarray}).save(function(err){
 												 	if(err) throw err;
 												});
@@ -310,6 +320,11 @@ function sendNotification(trans_arr){
                 			}); }
 
                 }); } });	console.log('updated');	 }
+}
+
+var hsh ='';
+function hashToReact(hsh){
+
 }
 
 // checking the 4 conditions

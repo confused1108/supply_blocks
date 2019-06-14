@@ -15,6 +15,7 @@ import Add from './add';
 import Check from './check';
 import QR_Reader from './qr_reader';
 import Transporter from './transporter';
+import Hash from './hash';
 
 class App extends Component {
   render() {
@@ -38,6 +39,7 @@ class App extends Component {
       <Route path='/check/:id' component={Check} />
       <Route path='/transporter/:id' component={Transporter} />
       <Route path='/qr' component={QR_Reader} />
+      <Route path='/hash/:id' component={Hash} />
       </Switch>
       </div>
       </BrowserRouter>

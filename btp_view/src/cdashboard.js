@@ -7,7 +7,7 @@ class Dashbrd extends Component {
 
   render() {
     return (
-      <div>
+      <div className = 'Dashbrd'>
        <nav>
         <div className="nav-wrapper" style={{backgroundColor:'#009688'}}>
           <Link to="#" className="brand-logo">Dashboard</Link>
