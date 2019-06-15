@@ -60,11 +60,7 @@ const OrderSchema = new mongoose.Schema({
 	order_id : {type : Number , required : true},
 	seller_detail : {type : String , required : true},
 	buyer_detail : {type : String , required : true},
-	//product_details : {type : Object , required : true},
-	pvalue : {type : Number , required : true},
-	gvalue : {type : Number , required : true},
-	hashvalue: {type : Number , required : true},
-	convertedHash : String,
+	//product_details : {type : Object , required : true}
     transporter_details : Array 
 });
 
@@ -88,6 +84,21 @@ const GraphNodesSchema = new mongoose.Schema({
 	nodes : Array 
 });
 
+const OrderCryptoSchema = new mongoose.Schema({
+	order_id : {type : Number , required : true},
+	pvalue : {type : Number , required : true},
+	gvalue : {type : Number , required : true},
+	hashvalue: {type : Number , required : true},
+	convertedHash : String,
+    tx : String,
+	flag : Boolean
+}); 
+
+const AdminSchema = new mongoose.Schema({
+	name : String , 
+	email : String 
+});
+
 CompanySchema.plugin(timestamp);
 IndSchema.plugin(timestamp);
 PackageSchema.plugin(timestamp);
@@ -104,6 +115,8 @@ const Package = mongoose.model('Package', PackageSchema , 'Package');
 const transporter = mongoose.model('transporter', transporterSchema , 'transporter');
 const connections_final = mongoose.model('connections_final', connections_finalSchema , 'connections_final');
 const Cities= mongoose.model('Cities', CitiesSchema , 'Cities');
+const OrderCrypto = mongoose.model('OrderCrypto', OrderCryptoSchema , 'OrderCrypto');
+const Admin = mongoose.model('Admin', AdminSchema , 'Admin');
 
 var Graph = require('node-dijkstra');
 var route = new Graph();
@@ -249,20 +262,18 @@ app.get('/gethash/:id' , function(req,res){
 	})
 });
 
+var v ='';
+function call(v)
+{
+	return v;
+}
+
 var finalarray =[];
 app.get('/placeorder' , urlencodedParser , function(req,res){
 	
 	const {seller_detail , buyer_detail , /*product_details*/} = req.body;
 	var store = (new Date()).getTime();
-    var values = forP(store);
-    const order_id = values[0];
-    const pvalue = values[1];
-    const gvalue = values[2];
-    const hashvalue = values[3];
-    var f = '"' + hashvalue + '"';
-    hash.update(f);
-    var  convertedHash = hash.digest('hex');
-    console.log(convertedHash);
+	var order_id = call(store);
 	const query1 = {city_name : seller_detail};
 	const query2 = {city_name : buyer_detail};
 	Cities.find(query1,function(err,data){
@@ -279,22 +290,69 @@ app.get('/placeorder' , urlencodedParser , function(req,res){
 								array1 = data[0];
 								eval(array1);
 								finalarray = route.path(node1,node2);
-								var order = Order({convertedHash , order_id  , seller_detail , buyer_detail , pvalue , gvalue,
-													hashvalue , transporter_details : finalarray}).save(function(err){
+								var order = Order({ order_id  , seller_detail , buyer_detail ,
+													transporter_details : finalarray}).save(function(err){
 												 	if(err) throw err;
 												});
-								console.log('Order saved');
-		                        sendNotification(finalarray);
+								console.log('Order stage 1');
+		                        sendNotification(order_id , finalarray);
 	
 						} });
 				    } });
 		} });});
 
-var trans_arr =[];
+var oid ='';
 
-function sendNotification(trans_arr){
+function Crypto(oid){
+	console.log('came');
+	var values = forP(oid);
+	const hashvalue = values[3];
+    var f = '"' + hashvalue + '"';
+    hash.update(f);
+    var  convertedHash = hash.digest('hex');
+    console.log(convertedHash);
+	var cryto1 = OrderCrypto({order_id : values[0] , pvalue : values[1] , gvalue : values[2] ,
+							 hashvalue : values[3] , convertedHash , flag : false
+							}).save(function(err){
+								throw err;
+							});
+    console.log('saved');
+}
 
-    console.log(trans_arr);
+app.get('/admin/:name/:email',function(req,res){
+	const query = {name : req.params.name , email : req.params.email};
+	Admin.find(query , function(err,data){
+		if(err) throw err;
+		if(data.length > 0){
+			res.send(data[0]);
+		}
+	});
+});
+
+app.get('/fetchorders' , function(req,res){
+	console.log('came3');
+	const query = {flag : false};
+	OrderCrypto.find(query , function(err,data){
+		if(err) throw err;
+		if(data.length > 0){
+			console.log('hello');
+			res.send(data);
+		}
+	});
+});
+
+app.get('/returntx/:hash/:tx' , function(req,res){
+	const query = {convertedHash : req.params.hash };
+	OrderCrypto.update(query , {flag : true , tx : req.params.tx} ,function(err){
+		if(err) throw err;
+	});
+	console.log('tx stored');
+});
+
+var trans_arr =[]; var iid='';
+
+function sendNotification(iid,trans_arr){
+
 	for(var i =1 ; i < trans_arr.length-1 ; i++){
 		var x = Number(trans_arr[i]);
 		var y = Number(trans_arr[i-1]);
@@ -302,29 +360,23 @@ function sendNotification(trans_arr){
 		const query = {transporter_id : x};
 		const query1 = {transporter_id : y };
 		const query2 = {transporter_id : z };
-		console.log(query);console.log(query1);console.log(query2);
                 transporter.find(query1,function(err,data){
                 	if(err) throw err;
                 	if(data.length>0){
                 		var obtain_from = data[0].transporter_name;
-                		console.log(obtain_from);
                 		transporter.find(query2,function(err,data){
                 			if(err) throw err;
                 			if(data.length>0){
                 				var give_to = data[0].transporter_name;
-                				console.log(give_to);
                 				var msg = 'Obtain from ' + obtain_from + ' and Give to ' + give_to ;
  							    transporter.update(query, {$push:{msgs:msg}} ,function(err){
 									if(err) throw err;	
 
                 			}); }
 
-                }); } });	console.log('updated');	 }
-}
-
-var hsh ='';
-function hashToReact(hsh){
-
+                }); } });
+                	 }
+                Crypto(iid);
 }
 
 // checking the 4 conditions

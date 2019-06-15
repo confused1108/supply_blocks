@@ -19,7 +19,7 @@ class NextCompo extends Component {
     }
   
      
-     componentWillMount = async () => {
+     handleClick = async () => {
 
         const account = await web3.eth.getAccounts();
 
@@ -44,6 +44,7 @@ class NextCompo extends Component {
         <div>
             
             <p>Address = {this.state.ethAddress}</p>
+            <button onClick={this.handleClick}>Send</button>
             <p>Transaction Hash = {this.state.transactionHash}</p>
         </div>
       );
