@@ -15,3 +15,4 @@ contract Contract {
    return myHash[i];
  }
 }
+

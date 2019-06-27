@@ -5,6 +5,11 @@ const mongoose = require('mongoose');
 const timestamp = require('mongoose-timestamp');
 const nodemailer = require('nodemailer');
 const {SHA3} = require('sha3');
+const fs = require('fs');
+const qrcode = require('qrcode');
+var cache = require('memory-cache');
+const EC = require('elliptic').ec;
+var ec = new EC('secp256k1');
 
 const hash = new SHA3(512);
 
@@ -18,6 +23,7 @@ mongoose.connect('mongodb://localhost/order_chain');
 
 var db = mongoose.connection;
 
+//databases
 const PackageSchema = new mongoose.Schema({
 	packagetype:{type : String , required : true},
 	cid :{type : String , required : true},
@@ -44,14 +50,14 @@ const IndSchema = new mongoose.Schema({
 });
 
 const transporterSchema = new mongoose.Schema({
+	orders :  {type : Array , required : true}, //contains array of object // in one object {order_id,msgs,noInChain,flag}
 	transporter_name : {type : String , required : true},
 	transporter_id : {type : Number , required : true},
 	city_id : {type : Number , required : true},
-	number : {type : Number , required : true},
-	msgs : {type : Array , required : true}
+	number : {type : Number , required : true}
 });
 
-const CitiesSchema = new mongoose.Schema({
+const citiesSchema = new mongoose.Schema({
 	city_name : {type : String , required : true},
 	city_id : {type : String , required : true}
 });
@@ -64,12 +70,12 @@ const OrderSchema = new mongoose.Schema({
     transporter_details : Array 
 });
 
-const NodeSchema = new mongoose.Schema({
-	name : {type : String , required : true},
-	number : {type : Number , required : true},
-	obtain_from : {type : String , required : true},
-	give_to : {type : String , required : true}
-});
+// const NodeSchema = new mongoose.Schema({
+// 	name : {type : String , required : true},
+// 	number : {type : Number , required : true},
+// 	obtain_from : {type : String , required : true},
+// 	give_to : {type : String , required : true}
+// });
 
 const connections_finalSchema = new mongoose.Schema({
 	Conn_id:Number,
@@ -99,14 +105,15 @@ const AdminSchema = new mongoose.Schema({
 	email : String 
 });
 
+//
 CompanySchema.plugin(timestamp);
 IndSchema.plugin(timestamp);
 PackageSchema.plugin(timestamp);
 transporterSchema.plugin(timestamp);
 OrderSchema.plugin(timestamp);
-NodeSchema.plugin(timestamp);
+//NodeSchema.plugin(timestamp);
 
-const Node = mongoose.model('Node', NodeSchema , 'Node');
+//const Node = mongoose.model('Node', NodeSchema , 'Node');
 const GraphNodes = mongoose.model('GraphNodes', GraphNodesSchema , 'GraphNodes');
 const Order = mongoose.model('Order', OrderSchema , 'Order');
 const Company = mongoose.model('Company', CompanySchema , 'Company');
@@ -114,7 +121,7 @@ const Ind = mongoose.model('Ind', IndSchema , 'Ind');
 const Package = mongoose.model('Package', PackageSchema , 'Package');
 const transporter = mongoose.model('transporter', transporterSchema , 'transporter');
 const connections_final = mongoose.model('connections_final', connections_finalSchema , 'connections_final');
-const Cities= mongoose.model('Cities', CitiesSchema , 'Cities');
+const cities= mongoose.model('cities', citiesSchema , 'cities');
 const OrderCrypto = mongoose.model('OrderCrypto', OrderCryptoSchema , 'OrderCrypto');
 const Admin = mongoose.model('Admin', AdminSchema , 'Admin');
 
@@ -171,31 +178,140 @@ app.post('/addpackage/:email/:bookdate/:no/:days/:packagetype/:cid',function(req
 });
 
 //find order details with order_id
-app.get('/order_details/:id', urlencodedParser , (req , res) => {
-		const {seller_detail , buyer_detail , product_details , name , from_place , to_place , 
- 			   obtain_from , give_to} = req.body;
- 		const query = {_id:req.params.id};
- 		Order.find(query,function(err,order){
- 			if(err) throw err;
- 			if(order.length ==0){
- 				console.log('No such order exists');
- 				res.send('No such order exists');
- 			}
- 			if(order.length >0){
- 				res.send(order[0]);
- 			}
- 		});
-});
+// app.get('/order_details/:id', urlencodedParser , (req , res) => {
+// 		const {seller_detail , buyer_detail , product_details , name , from_place , to_place , 
+//  			   obtain_from , give_to} = req.body;
+//  		const query = {_id:req.params.id};
+//  		Order.find(query,function(err,order){
+//  			if(err) throw err;
+//  			if(order.length ==0){
+//  				console.log('No such order exists');
+//  				res.send('No such order exists');
+//  			}
+//  			if(order.length >0){
+//  				res.send(order[0]);
+//  			}
+//  		});
+// });
 
 // get transportr profile with id
 app.get('/transporter/:id' , function(req,res){
   
-    const query = {transporter_id:Number(req.params.id)};
+    var query = {transporter_id : Number(req.params.id)};
     transporter.find(query, function(err,node){
   	if(err) throw err;
-  	res.send(node[0]);
+  	if(node.length > 0){
+  		console.log('called',node[0]);
+  		res.send(node[0]);
+  }
   });
 });
+
+//get seller profile with id
+app.get('/seller/:id' , function(req,res){
+  
+    var query = {transporter_id:Number(req.params.id)};
+    console.log('called1');
+    transporter.find(query, function(err,data){
+  	if(err) throw err;
+  	console.log(data);
+  	if(data.length>0){
+  	res.send(data[0]);
+  }
+  });
+});
+
+//seller request to access next person in chain
+app.get('/next/:id/:no' , function(req,res){
+    
+    console.log('called');
+	var query = {order_id : req.params.id};
+	console.log(query);
+	var no = req.params.no;
+	console.log(no);
+	var order_id  = req.params.id;
+	Order.find(query , function(err,data){
+		if(err) throw err;
+		if(data.length >0){
+         var array = data[0].transporter_details;
+         console.log(array);
+         for(var j=0 ; j<array.length ; j++){
+            if(array[j] == no){
+            	var transNext = j+1;
+            	console.log(array[transNext]);
+            	var query1 = {transporter_id : Number(transNext)};
+            	transporter.find(query1,function(err,data){
+            		if(err) throw err;
+            		if(data.length > 0){
+            			console.log(data[0].orders);
+            			var arr = data[0].orders;
+            			for(var k=0 ; k<arr.length ; k++){
+            				if(arr[k].order_id == order_id){
+            					var u = arr[k].flag;
+            					console.log(u);
+    							transporter.updateOne({transporter_id : Number(transNext) ,'orders.order_id' : order_id} ,
+    								{ '$set' : {'orders.0.flag' : true}},
+    								function(err) {
+    								if(err) throw err;
+    								transporter.find({transporter_id : Number(transNext)},function(err,data){
+    									if(err) throw err;
+    									console.log(data[0].orders);
+    								});
+    								console.log('updated');
+    							});
+            						
+            					; }}}
+            				}); }}}
+		});
+});
+
+//check transporter's hash
+app.get('/checkTrans/:id/:flag' , function(req,res){
+    
+    var iiid = Number(req.params.id);
+    var sid = '"' + iiid + '"';
+    console.log(sid);
+    run().catch(error => console.error(error.stack));
+	async function run() {
+	  const res = await qrcode.toDataURL(sid);
+     console.log('qr called');
+	  fs.writeFileSync('./qr.html', `<img src="${res}">`);
+	  console.log('Wrote to ./qr.html');
+	}
+    if(req.params.flag == true){
+	var array = forP(iiid);
+	var transHash = array[3];
+    var f = '"' + transHash + '"';
+    hash.update(f);
+    var  convertedTransHash = hash.digest('hex');
+    console.log(convertedTransHash);
+    } else {
+    	console.log('not correct')
+    }
+});
+
+//get buyer profile page
+app.get('/tobuyer/:id' , function(req,res){
+
+	var query = {order_id : req.params.id};
+	Order.find(query , function(err,data){
+		if(err) throw err;
+		console.log(data);
+		if(data.length > 0){
+			res.send(data);
+		
+	} });
+});
+
+//generate keys
+app.get('/generateKeys/:id' , function(req,res){
+	var key = ec.genKeyPair();//private
+	var pubPoint = key.getPublic();
+	var pub = pubPoint.encode('hex');
+	var key2 = ec.keyFromPublic(pub, 'hex');//public
+	cache.put('key', key);
+	console.log(cache.get('key'));
+})
 
 //reducing the total number after use of api
 app.get('/package/:id',function(req,res){
@@ -232,7 +348,8 @@ app.get('/',function(req,res){
 				string = 'route.addNode("' + i  + '", {';
 				for(let j=0;j<data.length;j++){
 					if(data[j].Source == i){
-						 string += data[j].Destination + ':' + data[j].Distance + ',';
+						var factor =  ( data[j].Distance * data[j].time_const );
+						 string += data[j].Destination + ':' + factor + ',';
 					}}
 					string = string.substring(0, string.length - 1);
 				    string += '})';
@@ -251,17 +368,6 @@ app.get('/',function(req,res){
 
 var node1 = 0 , node2 = 0;
 
-app.get('/gethash/:id' , function(req,res){
-	console.log('stage1');
-	const query = {order_id : req.params.id};
-	Order.find(query , function(err,data){
-		if(err) throw err;
-		if(data.length > 0){
-			res.send(data[0]);
-		}
-	})
-});
-
 var v ='';
 function call(v)
 {
@@ -269,18 +375,18 @@ function call(v)
 }
 
 var finalarray =[];
+//placing a new order and generating array of transporters
 app.get('/placeorder' , urlencodedParser , function(req,res){
-	
 	const {seller_detail , buyer_detail , /*product_details*/} = req.body;
 	var store = (new Date()).getTime();
 	var order_id = call(store);
 	const query1 = {city_name : seller_detail};
 	const query2 = {city_name : buyer_detail};
-	Cities.find(query1,function(err,data){
+	cities.find(query1,function(err,data){
 		if(err) throw err;
 		if(data.length > 0){
 				node1 = data[0].city_id;
-				Cities.find(query2,function(err,data){
+				cities.find(query2,function(err,data){
 					if(err) throw err;
 					if(data.length > 0){
 						node2 = data[0].city_id;
@@ -294,31 +400,30 @@ app.get('/placeorder' , urlencodedParser , function(req,res){
 													transporter_details : finalarray}).save(function(err){
 												 	if(err) throw err;
 												});
-								console.log('Order stage 1');
 		                        sendNotification(order_id , finalarray);
 	
 						} });
 				    } });
 		} });});
 
-var oid ='';
+var oid ='';var no = 0;
 
-function Crypto(oid){
-	console.log('came');
+//calling P,G,a generating functions
+function Crypto(oid , no){
 	var values = forP(oid);
 	const hashvalue = values[3];
     var f = '"' + hashvalue + '"';
     hash.update(f);
     var  convertedHash = hash.digest('hex');
-    console.log(convertedHash);
 	var cryto1 = OrderCrypto({order_id : values[0] , pvalue : values[1] , gvalue : values[2] ,
 							 hashvalue : values[3] , convertedHash , flag : false
 							}).save(function(err){
-								throw err;
+								if(err) throw err;
 							});
-    console.log('saved');
+	console.log('Updated' , no);
 }
 
+// get admin login page
 app.get('/admin/:name/:email',function(req,res){
 	const query = {name : req.params.name , email : req.params.email};
 	Admin.find(query , function(err,data){
@@ -329,54 +434,88 @@ app.get('/admin/:name/:email',function(req,res){
 	});
 });
 
+// get admin orders page for approval
 app.get('/fetchorders' , function(req,res){
-	console.log('came3');
 	const query = {flag : false};
 	OrderCrypto.find(query , function(err,data){
 		if(err) throw err;
 		if(data.length > 0){
-			console.log('hello');
 			res.send(data);
 		}
 	});
 });
 
+// get returned hash from contract
 app.get('/returntx/:hash/:tx' , function(req,res){
 	const query = {convertedHash : req.params.hash };
 	OrderCrypto.update(query , {flag : true , tx : req.params.tx} ,function(err){
 		if(err) throw err;
 	});
+	res.redirect('/fetchorders');
 	console.log('tx stored');
 });
 
 var trans_arr =[]; var iid='';
 
+// send notifications to all nodes in chain
 function sendNotification(iid,trans_arr){
-
-	for(var i =1 ; i < trans_arr.length-1 ; i++){
+   // for seller
+   console.log(iid , trans_arr);
+   console.log('stage1');
+  
+   var time = 10;
+   var number = 0;
+   var nid = iid;
+   var queryS = {transporter_id : Number(trans_arr[0])};
+   var queryS1 = {transporter_id : Number(trans_arr[1])};
+   console.log(number);
+   transporter.find(queryS1,function(err,data){
+    	if(err) throw err;
+    	console.log('stage2');
+    	if(data.length>0){
+    	var seller_give = 	data[0].transporter_name;
+    	var msgS = 'Give the product to ' + seller_give + ' at ' + time;
+        var toinputS = {order_id : nid , msgs : msgS , noInChain : number , flag : false};
+    	  transporter.updateOne(queryS, {$push:{orders : toinputS}} ,function(err){
+    	  	if(err) console.log('Error0');	
+			console.log('updated');
+    	  });
+    	} });
+    for(var i =1 ; i < 4 ; i++){
+    	console.log(i + 'called');
 		var x = Number(trans_arr[i]);
 		var y = Number(trans_arr[i-1]);
 		var z = Number(trans_arr[i+1]);
 		const query = {transporter_id : x};
 		const query1 = {transporter_id : y };
 		const query2 = {transporter_id : z };
-                transporter.find(query1,function(err,data){
-                	if(err) throw err;
-                	if(data.length>0){
-                		var obtain_from = data[0].transporter_name;
-                		transporter.find(query2,function(err,data){
-                			if(err) throw err;
-                			if(data.length>0){
-                				var give_to = data[0].transporter_name;
-                				var msg = 'Obtain from ' + obtain_from + ' and Give to ' + give_to ;
- 							    transporter.update(query, {$push:{msgs:msg}} ,function(err){
-									if(err) throw err;	
+            transporter.find(query1,function(err,data){
+            	if(err) console.log('Error1');
+            	if(data.length>0){
+            		var obtain_from = data[0].transporter_name;
+            		console.log(obtain_from);
+            		transporter.find(query2,function(err,data){
+            			if(err) console.log('Error2');
+            			if(data.length>0){
+            				var give_to = data[0].transporter_name;
+            				console.log(give_to)
+            				var msg = 'Obtain from ' + obtain_from + ' and Give to ' + give_to + '  at  ' + time;
+            				console.log(msg);
+            				var toinput = {order_id : nid , msgs : msg , noInChain : number , flag : false};
+							transporter.updateOne(query, {$push:{orders : toinput}} ,function(err){
+								if(err) console.log('Error3');
+								console.log('updated');
+								console.log(number);
 
-                			}); }
+            			}).then(() => {
+            				 if(time >=24) time=8; 
+							 time+=2; 
+							 number++;
+							});
+					}
 
-                }); } });
-                	 }
-                Crypto(iid);
+            }); }}); }
+ 		Crypto(iid , number);
 }
 
 // checking the 4 conditions
@@ -393,15 +532,16 @@ app.post('/check/:id',urlencodedParser,function(req,res){
 			res.send('No such user exists');
 		}
 		if(user.length>0){
+			console.log('You are logged in');
 			const query2= {cid:user[0]._id};
 			Package.find(query2,function(err,usr){
-				console.log('stage2');
 				if(err) throw err;
 				if(usr.length == 0 ){
 					console.log('No Package Exists');//if the company has no package present
 					res.send('No Package Exists');
 				}
-				if(usr.length > 0){
+					if(usr.length > 0){
+					console.log('U have some Packages in your account');
 	 				const query3 = {_id : pid};
 					Package.find(query3,function(err,package){
 						if(err) throw err;
@@ -411,6 +551,7 @@ app.post('/check/:id',urlencodedParser,function(req,res){
 							res.send('No such package for this id exists');
 						}
 						if(package.length>0){
+						console.log('Package for this id found')
 						for(let k = 0; k < package.length ; k++){
 
 							    const date = (new Date()).getTime();
@@ -431,12 +572,13 @@ app.post('/check/:id',urlencodedParser,function(req,res){
 								}
 								else {
 									//if all 4 conditions are not there
-									console.log('Success');
+									console.log('Api available');
+									console.log('Date not expired');
 									dat[m] = package[k];
 									m++;
 								}
 						}
-						console.log(errors);console.log(dat);
+						console.log();console.log(dat);errors
 						res.send(dat);
 						
 				}});
@@ -446,6 +588,8 @@ app.post('/check/:id',urlencodedParser,function(req,res){
 }); });
 
 var val = 0;var array=[];
+
+//functions to get P , G, a 
 function forP(val){
 	var num = 0;var final = 0;
     var prime = 0;var result= 0 ;var ans=0;

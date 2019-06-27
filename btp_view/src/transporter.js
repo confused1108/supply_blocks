@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import {Link} from 'react-router-dom';
 
-class Check extends Component {
+class Transporter extends Component {
 
    constructor(){
     super();
@@ -18,8 +18,18 @@ class Check extends Component {
     .then(data => this.setState({transporter : data}));
   }
 
+  handleClick = (id) => {
+    fetch('/generateKeys/' + id)
+      .catch(err => console.log(err));
+  }
+
+  handleAccess = (id , flag) => {
+    fetch('/checkTrans/' + id + '/' + flag);
+  }
+
   render() {
     const data = this.state.transporter;
+    console.log(data.orders);
     return (
       <div>
          <nav>
@@ -29,13 +39,23 @@ class Check extends Component {
             </ul>
           </div>
         </nav>
-        <br /><br /><br /><br/>
+        <br /><br /><br />
+          <br/><br/><br/>
           <div className="card">
           <h6 className="card-header">Messages</h6>
-          {data.msgs && data.msgs.map(msg => {
+          {data.orders && data.orders.map(order => {
           return (
           <div className="card-body">
-            <h6 className="card-title">{msg}</h6>
+            <h6 className="card-title"> For Order : {order.order_id} </h6>
+            <h6 className="card-title"> Msg : {order.msgs} </h6>
+            <h6 className="card-title"> Your number in chain : {order.noInChain} </h6>
+
+            <button className='btn btn-secondary'  onClick = {() => this.handleClick(order.order_id)} > Generate Keys </button>
+            
+            <button  onClick = {() => this.handleAccess(order.order_id , order.flag)} className='btn btn-secondary' >
+              Give Access
+            </button>
+
           </div>
           );
         })}
@@ -45,4 +65,4 @@ class Check extends Component {
     }
 }
 
-export default Check;
+export default Transporter;

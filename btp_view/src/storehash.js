@@ -5,8 +5,6 @@ const web3 = new Web3(provider);
 
 const address = '0x22b1ffd17ff0dbaed665f15b6fd5478fb551e0fa';
 
-console.log('called') ;
-
 const abi = [
   {
 	"constant": false,

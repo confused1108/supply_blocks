@@ -15,9 +15,11 @@ import Add from './add';
 import Check from './check';
 import QR_Reader from './qr_reader';
 import Transporter from './transporter';
-import Hash from './hash';
 import Admin from './admin';
 import Order from './order';
+import Seller from './seller';
+import Buyer from './buyer';
+import Next from './next';
 
 class App extends Component {
   render() {
@@ -40,10 +42,12 @@ class App extends Component {
       <Route path='/package/:id' component={Add} />
       <Route path='/check/:id' component={Check} />
       <Route path='/transporter/:id' component={Transporter} />
+      <Route path='/seller/:id' component={Seller} />
+      <Route path='/tobuyer/:id' component={Buyer} />
       <Route path='/qr' component={QR_Reader} />
-      <Route path='/hash/:id' component={Hash} />
       <Route path='/admin' component={Admin} />
       <Route path='/checkorders' component={Order} />
+      <Route path='/next/:id/:no' component={Next} />
       </Switch>
       </div>
       </BrowserRouter>
