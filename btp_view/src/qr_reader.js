@@ -1,23 +1,32 @@
 import React, { Component } from 'react'
 import QrReader from 'react-qr-reader'
+import {Redirect} from 'react-router-dom';
 
 class QR_Reader extends Component {
   state = {
-    result: 'No result'
+    result: ''
   }
 
-  handleScan = data => {
+  handleScan = (data) => {
     if (data) {
       this.setState({
         result: data
-      })
+      });
     }
   }
 
-  handleError = err => {
+  handleError = (err) => {
     console.error(err)
   }
   render() {
+    var res = Number(this.state.result);
+    var id = this.props.match.params.id;
+     if(res){
+        return (
+            <Redirect to={{pathname:'/seller/' + id , state:{odr_id : res}}} />
+            );
+    }
+    else {
     return (
       <div>
         <QrReader
@@ -29,7 +38,7 @@ class QR_Reader extends Component {
         <p>{this.state.result}</p>
       </div>
     )
-  }
+  }}
 }
 
 export default QR_Reader;

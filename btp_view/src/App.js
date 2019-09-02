@@ -1,3 +1,4 @@
+
 import React, { Component } from 'react';
 import {BrowserRouter,Switch,Route} from 'react-router-dom';
 import Dashboard from './dashboard';
@@ -20,8 +21,11 @@ import Order from './order';
 import Seller from './seller';
 import Buyer from './buyer';
 import Next from './next';
+import Api1 from './api-1';
+import Api from './api';
 
 class App extends Component {
+  
   render() {
     return (
 
@@ -44,10 +48,12 @@ class App extends Component {
       <Route path='/transporter/:id' component={Transporter} />
       <Route path='/seller/:id' component={Seller} />
       <Route path='/tobuyer/:id' component={Buyer} />
-      <Route path='/qr' component={QR_Reader} />
+      <Route path='/qr/:id' component={QR_Reader} />
       <Route path='/admin' component={Admin} />
       <Route path='/checkorders' component={Order} />
       <Route path='/next/:id/:no' component={Next} />
+      <Route path='/api1/:id' component={Api1} />
+      <Route path='/api/:id' component={Api} />
       </Switch>
       </div>
       </BrowserRouter>

@@ -3,23 +3,23 @@ const provider = window.web3.currentProvider;
 provider.enable(); 
 const web3 = new Web3(provider);
 
-const address = '0x22b1ffd17ff0dbaed665f15b6fd5478fb551e0fa';
+const address = '0x4784b9efe7535c4877a19951b616f4df7bad5b53';
 
 const abi = [
-  {
-	"constant": false,
-	"inputs": [
-		{
-			"name": "x",
-			"type": "string"
-		}
-	],
-	"name": "sendHash",
-	"outputs": [],
-	"payable": false,
-	"stateMutability": "nonpayable",
-	"type": "function"
-   },
+	{
+		"constant": false,
+		"inputs": [
+			{
+				"name": "x",
+				"type": "string"
+			}
+		],
+		"name": "sendHash",
+		"outputs": [],
+		"payable": false,
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
 	{
 		"constant": true,
 		"inputs": [
@@ -46,7 +46,7 @@ const abi = [
 		"outputs": [
 			{
 				"name": "",
-				"type": "uint256"
+				"type": "int256"
 			}
 		],
 		"payable": false,

@@ -14,38 +14,58 @@ class Order extends Component {
     this.state={
       orders : '',
       ethAddress:'',
-      transactionHash:''
+      transactionHash:'',
+      getid : ''
     }
   }
 
   componentWillMount() {
-     console.log('came2');
+    console.log('came2');
     fetch('/fetchorders')
     .then(res => res.json())
     .then(data => this.setState({orders:data}));
   }
   
    handleClick = async (hash) => {
-
+    console.log('called');
     const account = await web3.eth.getAccounts();
 
     const ethAddress= await storehash.options.address;
     this.setState({ethAddress});
 
-     storehash.methods.sendHash(hash).send({
+    storehash.methods.sendHash(hash).send({
         from:account[0],
         gas:1000000
       }, (error, transactionHash) => {
-        console.log('called');
+        console.log('called1');
         console.log(error);
         console.log(transactionHash);
         this.setState({transactionHash});
-        if(this.state.transactionHash){
-        fetch('/returntx/' + hash + '/' + this.state.transactionHash)
-        .then(res => res.json());
-      }
+
+      //   if(this.state.transactionHash){
+      // //   fetch('/returntx/' + hash + '/' + this.state.transactionHash)
+      // //   .then(res => res.json());
+      //  }
       });  
 
+    }
+
+    handleId = async (id,hash) => {
+    const account = await web3.eth.getAccounts();
+
+    storehash.methods.getId().call({
+          from:account[0],
+            gas:1000000
+          }, (error, result) => {
+            console.log('called ID');
+            console.log(error);
+            console.log(result.toNumber());
+            this.setState({getid : result.toNumber()});
+            if(this.state.getid){
+             fetch('/returntx/' + '/' + id + '/' + hash + '/' + this.state.transactionHash + '/' + this.state.getid)
+             .then(res => res.json());
+           }
+        }); 
     }
 
   render() {
@@ -72,6 +92,7 @@ class Order extends Component {
               onClick = {() => {this.handleClick(order.convertedHash)}} >
                 Approve
               </button>
+              <button onClick = {() => this.handleId(order.order_id,order.convertedHash)} >Check ID</button>
               </td>
               </tr>
               )

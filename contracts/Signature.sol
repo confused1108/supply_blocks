@@ -25,7 +25,7 @@ contract sign{
         id++;
         signatures[id]=detail(a, b, s);
     }
-    
+    //a =getid , b= chainid;
     function returnId() public view returns(int) {
         return id;
     }
@@ -41,8 +41,6 @@ contract sign{
     function returnSignature(int a) public view returns(string memory){
         return signatures[a].s;
     }
-    
-    
     
     
 }
