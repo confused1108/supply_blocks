@@ -27,8 +27,8 @@ class Seller extends Component {
     .then(data => this.setState({orders : data}));
   }
   
-   handleClick = (id) => {
-    fetch('/generateKeys/' + id)
+   handleClick = (id,id2) => {
+    fetch('/generateKeys/' + id + '/' + id2)
       .catch(err => console.log(err));
   }
 
@@ -95,6 +95,9 @@ class Seller extends Component {
             <div className="card-body">
               <h6 className="card-title"> For Order : {order.order_id}</h6>
               <h6 className="card-title"> Msg : {order.msgs} </h6>
+              <button className='btn btn-secondary'  onClick = {() => this.handleClick(order.transporter_id,order.order_id)} >
+                Generate Keys 
+              </button>
               
               <button className='btn btn-secondary'  
               onClick = {() => this.handleNext(order.order_id,order.transporter_id)}>
@@ -134,9 +137,6 @@ class Seller extends Component {
         </nav>
         <br /><br /><br /><br/>
           <div className="card">
-          <button className='btn btn-secondary'  onClick = {() => this.handleClick(this.state.orders.transporter_id)} >
-            Generate Keys 
-          </button>
           <h6 className="card-header">Messages</h6>
           {compo}
         </div>

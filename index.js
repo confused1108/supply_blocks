@@ -772,7 +772,7 @@ app.get('/tobuyer/:id' , function(req,res){
 
 //17
 //generate private and public keys-store public key in database of transporter ans private in cache
-app.get('/generateKeys/:tid' , function(req,res){
+app.get('/generateKeys/:tid/:oid' , function(req,res){
 	
 	var key = ec.genKeyPair();//private
 	var pubPoint = key.getPublic();
@@ -782,15 +782,15 @@ app.get('/generateKeys/:tid' , function(req,res){
 	cache.put('key', key);
 
 	var tid = Number(req.params.tid);
-	// var oid = Number(req.params.oid);
+	var oid = Number(req.params.oid);
 	var keys = {key:pub};
-	TransOrder.updateOne(transporter_id:tid,{pubKey:keys},function(err){
+	TransOrder.updateOne({transporter_id:tid,order_id:oid},{pubKey:keys},function(err){
 		if(err) console.log('error');
 		console.log('public key stored');
-		// TransOrder.find(transporter_id:tid,function(err,data){
-		// 	if(err) throw err;
-		// 	console.log(data);
-		// });
+		TransOrder.find({transporter_id:tid,order_id:oid},function(err,data){
+			if(err) throw err;
+			console.log(data);
+		});
 	});
 });
 
