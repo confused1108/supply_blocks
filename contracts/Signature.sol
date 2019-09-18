@@ -1,18 +1,5 @@
 pragma solidity >=0.4.22 <0.6.0;
 
-// contract sign{
-    
-//     mapping(int=>string) public signatures;
-//     function addSignature(string memory s, int a) public {
-//         signatures[a]=s;
-//     }
-//     function returnSignature(int a) public view returns(string memory){
-//         return signatures[a];
-//     }
-    
-    
-// }
-
 contract sign{
     int id= 0;
     struct detail{

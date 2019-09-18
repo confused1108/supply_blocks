@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import Nav from './nav';
 import {Redirect} from 'react-router-dom';
+import { Grid, Row, Col, Table } from "react-bootstrap";
 
 class Api extends Component {
   
@@ -30,6 +31,11 @@ class Api extends Component {
         return (
             <div>
             <Nav />
+             <div className="container">
+              <input type="text" maxlength= "9" placeholder="Order Id" className="searchbar"></input>
+            <img style={{width:90,height:40}} src="https://images-na.ssl-images-amazon.com/images/I/41gYkruZM2L.png" 
+            alt="Magnifying Glass" className="button"></img>
+            </div>
             <div className="card">
             <br/><br/>
             <h4 className="card-header" style={{textAlign:'center'}}>Your Order : {order_details[0].order_id}</h4>
