@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 import Web3 from 'web3';
 import Nav from './nav';
 import storehash from './storehash';
+import storehash2 from './storehash2';
 import {Redirect} from 'react-router-dom';
 const provider = window.web3.currentProvider ; 
 provider.enable(); 
@@ -15,6 +16,7 @@ class Order extends Component {
       orders : '',
       ethAddress:'',
       transactionHash:'',
+      transactionHash2:'',
       getid : ''
     }
   }
@@ -68,6 +70,30 @@ class Order extends Component {
         }); 
     }
 
+    handleTransfer = async (oid) => {
+    
+    console.log('called3');
+    const account = await web3.eth.getAccounts();
+
+    const ethAddress= await storehash.options.address;
+    this.setState({ethAddress});
+
+    web3.eth.sendTransaction({from:'0xc294B89Ae0a29c0A6C535dbB6390652208A512a0', to:account[0], 
+      value: web3.utils.toWei('0.1', 'ether')}
+      , (error, transactionHash2) => {
+        console.log('called');
+        console.log(error);
+        console.log(transactionHash2);
+        this.setState({transactionHash2});
+        if(this.state.transactionHash2){
+          fetch('/toipfs/' + oid)
+          .then(res => res.json());
+        }
+      }
+      ); 
+    } 
+
+
   render() {
      const orders = this.state.orders;
      if(orders.length > 0){
@@ -75,7 +101,7 @@ class Order extends Component {
             <div>
             <Nav />
             <br /> <br/><br/>
-            <table className="table table-hover">
+            <table style={{marginLeft:30,width:1200}} className="table table-hover">
             <thead>
             <tr>
             <th scope="col">Order</th>
@@ -92,7 +118,11 @@ class Order extends Component {
               onClick = {() => {this.handleClick(order.convertedHash)}} >
                 Approve
               </button>
-              <button onClick = {() => this.handleId(order.order_id,order.convertedHash)} >Check ID</button>
+              <button   className='btn btn-secondary'  
+              onClick = {() => this.handleId(order.order_id,order.convertedHash)} >Check ID</button>
+              <button   className='btn btn-secondary' >From Buyer - Tax({order.cost})</button>
+              <button   className='btn btn-secondary'  
+              onClick = {() => {this.handleTransfer(order.order_id)}}>To Seller</button>
               </td>
               </tr>
               )

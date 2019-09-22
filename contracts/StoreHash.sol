@@ -7,10 +7,14 @@ contract Contract {
  function sendHash(string memory x) public {
    myHash.push(x);
    id++;
- }
+ } 
+ //pure
+
  function getId () public view returns (uint) {
      return id-1;
  }
+ //view
+ 
  function getHash(uint i) public view returns (string memory) {
    return myHash[i];
  }

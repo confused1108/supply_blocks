@@ -15,7 +15,8 @@ class Transporter extends Component {
       signdetails : '',
       order_id:'',
       tx:'',
-      forlast:false
+      forlast:false,
+      btns:'false'
     }
   }
 
@@ -102,6 +103,10 @@ class Transporter extends Component {
       });
     }
 
+    bringBtns = () => {
+      this.setState({btns:'true'});
+    }
+
   render() {
 
     console.log(this.state.forlast);
@@ -119,7 +124,7 @@ class Transporter extends Component {
       console.log(orders);
 
       var compo = (orders && orders.map(order => {
-        if(order.flag=='true'){
+        if(order.flag=='true' && this.state.btns=='true'){
           return  (
             <div>
             <div className="card-body">
@@ -143,7 +148,20 @@ class Transporter extends Component {
             </div>
           </div>
             )
-        } else if(order.flag=='false') {
+        } else if(order.flag=='true' && this.state.btns=='false'){
+              return  (
+                <div>
+                <div className="card-body">
+                  <h6 className="card-title"> For Order : {order.order_id}</h6>
+                  <h6 className="card-title"> Msg : {order.msgs} </h6>
+                  <div> Order Reached : <button className='btn btn-secondary' onClick={this.bringBtns.bind(this)} >
+                    Approve
+                  </button></div>
+                </div>
+                </div>
+              )
+
+          } else if(order.flag=='false') {
           return (
           <div className="card-body">
               <h6 className="card-title"> For Order : {order.order_id}</h6>
@@ -168,7 +186,7 @@ class Transporter extends Component {
         <br /><br /><br />
           <br/><br/><br/>
           <div className="card">
-          <h6 className="card-header">Messages</h6>
+          <h3 className="card-header">Messages</h3>
           <div className="card-body">
             {compo}
             </div>

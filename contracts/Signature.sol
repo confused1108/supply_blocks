@@ -12,6 +12,8 @@ contract sign{
         id++;
         signatures[id]=detail(a, b, s);
     }
+    //pure
+    
     //a =getid , b= chainid;
     function returnId() public view returns(int) {
         return id;

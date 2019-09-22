@@ -21,7 +21,8 @@ class Buyer extends Component {
       signdetails : '',
       tx:'',
       transactionHash:'',
-      transactionHash2:''
+      transactionHash2:'',
+      btns:'false'
     }
   }
 
@@ -51,9 +52,10 @@ class Buyer extends Component {
   //   .then(res => res.json())
   //   .then(data => this.setState({hash:data[0]}));
   // }
+  
 
+  //transfer of order_amt from buyer to arbitrator
   handleAppr = async () => {
-    
     console.log('called1');
     const account = await web3.eth.getAccounts();
 
@@ -67,25 +69,6 @@ class Buyer extends Component {
         console.log(error);
         console.log(transactionHash);
         this.setState({transactionHash});
-      }
-      ); 
-    } 
-
-  handleTransfer = async () => {
-    
-    console.log('called3');
-    const account = await web3.eth.getAccounts();
-
-    const ethAddress= await storehash.options.address;
-    this.setState({ethAddress});
-
-    web3.eth.sendTransaction({from:'0xc294B89Ae0a29c0A6C535dbB6390652208A512a0', to:account[0], 
-      value: web3.utils.toWei('0.1', 'ether')}
-      , (error, transactionHash2) => {
-        console.log('called');
-        console.log(error);
-        console.log(transactionHash2);
-        this.setState({transactionHash2});
       }
       ); 
     } 
@@ -130,6 +113,10 @@ class Buyer extends Component {
       });
     }
 
+    bringBtns = () => {
+      this.setState({btns:'true'});
+    }
+
   render() {
 
 
@@ -154,13 +141,23 @@ class Buyer extends Component {
               onClick = {() => this.signature(order.transporter_id,order.noInChain,this.state.forlast)}>
                 If Verified Sign
               </button>
-              <button className='btn btn-secondary'   onClick = {() => {this.handleTransfer()}} >
-                Complete Transfer
-              </button>
             </div>
           </div>
             )
-        } else if(order.flag=='false') {
+        } else if (order.flag=='true' && this.state.btns=='false'){
+              return  (
+                <div>
+                <div className="card-body">
+                  <h6 className="card-title"> For Order : {order.order_id}</h6>
+                  <h6 className="card-title"> Msg : {order.msgs} </h6>
+                  <div> Order Reached : <button className='btn btn-secondary' onClick={this.bringBtns.bind(this)} >
+                    Approve
+                  </button></div>
+                </div>
+                </div>
+              )
+
+          } else if(order.flag=='false') {
           return (
           <div className="card-body">
               <h6 className="card-title"> For Order : {order.order_id}</h6>
@@ -188,7 +185,7 @@ class Buyer extends Component {
         <br /><br /><br />
           <br/><br/><br/>
           <div className="card">
-          <h6 className="card-header">Messages</h6>
+          <h3 className="card-header">Messages</h3>
           <div className="card-body">
             {compo}
             </div>

@@ -39,8 +39,9 @@ class Seller extends Component {
       .then(data => this.setState({forlast:data[0]}));
   }
 
-   contract = async (data) => {
 
+  //add signature to Blockchain via smart contract fn
+   contract = async (data) => {
     var oid = this.state.order_id;
     const account = await web3.eth.getAccounts();
     console.log(data);
@@ -137,7 +138,7 @@ class Seller extends Component {
         </nav>
         <br /><br /><br /><br/>
           <div className="card">
-          <h6 className="card-header">Messages</h6>
+          <h3 className="card-header">Messages</h3>
           {compo}
         </div>
     </div>

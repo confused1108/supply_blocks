@@ -76,9 +76,11 @@ const connections_finalSchema = new mongoose.Schema({
 const OrderSchema = new mongoose.Schema({
 	order_id :  Number ,
 	noid : Number, 
+	name : String,
 	seller_detail : String,
 	buyer_detail : String,
 	product_details : String,
+	ipfshash : String,
     transporter_details : Array 
 });
 
@@ -113,7 +115,8 @@ const OrderCryptoSchema = new mongoose.Schema({
 	convertedHash : String,
 	getid : Number,
     tx : String,
-	flag : Boolean
+	flag : Boolean,
+	cost: {type :Number, default :0}
 });
 
 //10-Admin Database
@@ -204,7 +207,7 @@ app.post('/addpackage/:email/:bookdate/:no/:days/:packagetype/:cid',function(req
 
 //6 
 //API trigger and check conditions
-app.post('/check/:id',urlencodedParser,function(req,res){
+app.get('/check/:id',urlencodedParser,function(req,res){
 
 	const pid = req.body.pid;
 	var i=0,m=0;var errors = [],dat=[],array=[];
@@ -218,7 +221,7 @@ app.post('/check/:id',urlencodedParser,function(req,res){
 		}
 		if(user.length>0){
 			console.log('You are logged in');
-			const query2= {cid:user[0]._id};
+			const query2= {cid:Number(user[0]._id)};
 			Package.find(query2,function(err,usr){
 				if(err) throw err;
 				if(usr.length == 0 ){
@@ -290,7 +293,7 @@ app.get('/',function(req,res){
 			while(i<57){
 				var string = '';
 				string = 'route.addNode("' + i  + '", {';
-				for(let j=0;j<data.length;j++){
+				for(var j=0;j<data.length;j++){
 					if(data[j].Source == i){
 						var factor =  ( data[j].Distance * data[j].time_const );
 						 string += data[j].Destination + ':' + factor + ',';
@@ -322,7 +325,8 @@ var finalarray =[];
 
 app.get('/placeorder' , urlencodedParser , function(req,res){
 
-	const {seller_detail , buyer_detail , product_details} = req.body;
+	const {seller_detail , buyer_detail , product_details , name} = req.body;
+	var cost=0;
 	var store = (new Date()).getTime();
 	var order_id = call(store);
 	const query1 = {city_name : seller_detail};
@@ -332,6 +336,7 @@ app.get('/placeorder' , urlencodedParser , function(req,res){
 		if(err) throw err;
 		if(data.length > 0){
 				node1 = data[0].city_id;
+
 				cities.find(query2,function(err,data){
 					if(err) throw err;
 					if(data.length > 0){
@@ -348,8 +353,21 @@ app.get('/placeorder' , urlencodedParser , function(req,res){
 								finalarray[len] = 251;
 								console.log(finalarray);
 								//placing the order now and storing in Order database
-								var order = Order({ order_id , seller_detail , buyer_detail , product_details,
+
+								var order = Order({ order_id , seller_detail , buyer_detail , product_details,name,
 													transporter_details : finalarray});
+								connections_final.find({Source : node1},function(err,data){
+									if(err) throw err;
+									var dist = Number(data[0].Distance);
+									if(dist>2000 && dist<3000)
+										cost = 70;
+									else if(dist>3000)
+										cost = 100;
+								    var order = OrderCrypto({order_id,cost}).save(function(err){
+								    	if(err) throw err;
+								    	console.log('Cost Saved');
+								    });
+								});
 								return order.save()
 								.then(res => {
 									//after placing order send notifications to all about the order 
@@ -554,11 +572,10 @@ function Crypto(oid){
     var  convertedHash = hash.digest('hex');
     hash.reset();
     //call OrderCrypto database to store p,g,a,hash details
-	var cryto1 = OrderCrypto({ order_id : oid , pvalue : values[1] , gvalue : values[2] ,
-							   hashvalue : values[3] , convertedHash , flag : false
-							}).save(function(err){
-								if(err) throw err;
-							});
+    OrderCrypto.updateOne({order_id:oid},{pvalue : values[1] , gvalue : values[2] ,
+							   hashvalue : values[3] , convertedHash , flag : false},function(err){
+							   	if(err) throw err;
+						 });
 	console.log('Updated');
 }
 
@@ -777,6 +794,8 @@ app.get('/generateKeys/:tid/:oid' , function(req,res){
 	var key = ec.genKeyPair();//private
 	var pubPoint = key.getPublic();
 	var pub = pubPoint.encode('hex');
+	console.log("keys generated");
+	console.log(pubPoint);
 	// var key2 = ec.keyFromPublic(pub, 'hex');//public
 
 	cache.put('key', key);
@@ -954,7 +973,7 @@ app.get('/sign/:tid/:cid/:oid/:forlast' , function(req,res){
 			var pub = data[0].pubKey.key;
 			var key2 = ec.keyFromPublic(pub, 'hex');
 			var ans = key2.verify(msgHash, derSign);
-			console.log('answer' + ans);
+			console.log('Verified Signature : ' + ans);
 			return ans;
 		}).then(answer => {
 			 TransOrder.updateOne({transporter_id:Number(req.params.tid),order_id:Number(req.params.oid)},
@@ -1059,8 +1078,16 @@ app.get('/verifytrans/:oid/:tid' , function(req,res){
 // }
 
 app.get('/api1/:company' , function(req,res){
-
-})
+	console.log('entered api1');
+	Order.aggregate([
+	{ $group : 
+	{_id : '$name' , total_orders : { $sum : 1 } }
+	}]).exec(
+	function(err,res) {
+	if(err) throw err;
+	console.log(res);
+	});
+});
 
 //api-2(Find out total number of orders between a period of time)
 app.get('/api2/:date1/:date2' , function(req,res){
@@ -1103,6 +1130,50 @@ app.get('/api4/product' , function(req,res){
 	});
 });
 
+app.get('/toipfs/:oid' , function(req,res){
+	var query = {order_id : Number(req.params.oid)};
+	Order.find(query,function(err,data){
+		if(err) throw err;
+		const node = new IPFS()
+
+		// once the node is ready
+		node.once('ready', () => {
+		  // convert your data to a Buffer and add it to IPFS
+		  node.add(IPFS.Buffer.from(data), (err, files) => {
+		    if (err) return console.error(err)
+
+		    // 'hash', known as CID, is a string uniquely addressing the data
+		    // and can be used to get it again. 'files' is an array because
+		    // 'add' supports multiple additions, but we only added one entry
+		    console.log(files[0].hash);
+		    Order.updateOne(query , {ipfshash:files[0].hash},function(err){
+		    	if(err) throw err;
+		    });
+		  });
+		})
+	});
+});
+
+app.get('/getipfs/:oid',function(req,res){
+
+	Order.find({order_id:Number(req.params.oid)})
+	.then(data => {
+		var hash = data[0].ipfshash;
+		return hash;
+	}).then(hh => {
+		const node = new IPFS()
+
+		node.once('ready', () => {
+		  node.cat(hh, (err, data) => {
+		    if (err) return console.error(err)
+
+		    // convert Buffer back to string
+		    console.log(data.toString())
+		  })
+		});
+	});
+})
+
 
 //find order details with order_id
 // app.get('/order_details/:id', urlencodedParser , (req , res) => {
@@ -1129,3 +1200,5 @@ app.listen('8080');
 //keys store
 //scan order_id
 //buyer before last transporter sign
+
+//code of transporter choosing process threshold value ke acc
