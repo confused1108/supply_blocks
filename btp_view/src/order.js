@@ -28,6 +28,8 @@ class Order extends Component {
     .then(data => this.setState({orders:data}));
   }
   
+  
+  //admin approval - storage of hash
    handleClick = async (hash) => {
     console.log('called');
     const account = await web3.eth.getAccounts();
@@ -43,18 +45,12 @@ class Order extends Component {
         console.log(error);
         console.log(transactionHash);
         this.setState({transactionHash});
-
-      //   if(this.state.transactionHash){
-      // //   fetch('/returntx/' + hash + '/' + this.state.transactionHash)
-      // //   .then(res => res.json());
-      //  }
       });  
 
     }
 
     handleId = async (id,hash) => {
     const account = await web3.eth.getAccounts();
-
     storehash.methods.getId().call({
           from:account[0],
             gas:1000000

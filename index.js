@@ -943,7 +943,7 @@ app.get('/sign/:tid/:cid/:oid/:forlast' , function(req,res){
 		// res.send(array)
 	}
 	else{
-	console.log('signature');
+	console.log('Signature');
 	var query1 = {order_id : Number(req.params.oid)};
 	OrderCrypto.find(query1,function(err,data){
 		if(err) throw err;
@@ -963,9 +963,14 @@ app.get('/sign/:tid/:cid/:oid/:forlast' , function(req,res){
 		// console.log(key2);
 		// if(data[0].orders.approved){
 		var msgoid = (req.params.oid).toString(16);
+		console.log('Order id provided by transporter : ' + req.params.oid);
 		var msgHash = msgoid;
 		var key = cache.get('key');
+		console.log("Private Key from transporter's cache" );
+		console.log(key);
 		var signature = key.sign(msgHash);
+		console.log('Signaure -');
+		console.log(signature);
 		var derSign = signature.toDER();
 		//console.log(key2.verify(msgHash, derSign));
 		TransOrder.find({transporter_id:Number(req.params.tid),order_id:Number(req.params.oid)},function(err,data){
@@ -1130,22 +1135,17 @@ app.get('/api4/product' , function(req,res){
 	});
 });
 
+
+//IPFS upload with details of order
 app.get('/toipfs/:oid' , function(req,res){
 	var query = {order_id : Number(req.params.oid)};
 	Order.find(query,function(err,data){
 		if(err) throw err;
 		const node = new IPFS()
-
 		// once the node is ready
 		node.once('ready', () => {
-		  // convert your data to a Buffer and add it to IPFS
 		  node.add(IPFS.Buffer.from(data), (err, files) => {
 		    if (err) return console.error(err)
-
-		    // 'hash', known as CID, is a string uniquely addressing the data
-		    // and can be used to get it again. 'files' is an array because
-		    // 'add' supports multiple additions, but we only added one entry
-		    console.log(files[0].hash);
 		    Order.updateOne(query , {ipfshash:files[0].hash},function(err){
 		    	if(err) throw err;
 		    });

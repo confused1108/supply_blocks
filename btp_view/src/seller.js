@@ -47,7 +47,6 @@ class Seller extends Component {
     console.log(data);
     var ans = (data.string).toString();
     var cid = Number(data.cid);
-
     if(data){
     storehash.methods.addSignature(ans, data.idd , cid).send({
         from:account[0],
@@ -61,9 +60,8 @@ class Seller extends Component {
           fetch('/returnSign/' + this.state.tx + '/' + oid + '/' + cid + '/' + this.props.match.params.id)
         }
       }); 
-
   }
-}
+  }
 
   signature = (tid , cid , acs) => {
     //var odr_id = this.props.location.state.odr_id;
